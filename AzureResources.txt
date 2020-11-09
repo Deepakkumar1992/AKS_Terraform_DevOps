@@ -1,0 +1,58 @@
+aksdemostoacc
+akskeyvault00
+https://localhost:44341/tbl_Name
+================================================================
+#creating the resource Group
+az group create -n AksTerraform-RG -l eastus
+
+#creating the storage account
+az storage account create -n aksdemostoacc -g AksTerraform-RG -l eastus
+
+#creating a tfstate container
+az storage container create -n tfstate --account-name aksdemostoacc
+
+#creating the KeyVault
+az keyvault create -n akskeyvault00 -g AksTerraform-RG -l eastus
+
+#Creating a SAS Token for the storage account, storing in KeyVault
+az storage container generate-sas --account-name aksdemostoacc --expiry 2020-01-01 --name tfstate --permissions dlrw -o json | xargs az keyvault secret set --vault-name akskeyvault00 --name TerraformSASToken --value
+
+#creating a Service Principal for AKS and Azure DevOps
+az ad sp create-for-rbac -n "AksTerraformSPN"
+
+#creating an ssh key if you don't already have one
+ssh-keygen  -f ~/.ssh/id_rsa_terraform
+
+#store the public key in Azure KeyVault
+az keyvault secret set --vault-name akskeyvault00 --name LinuxSSHPubKey -f ~/.ssh/id_rsa_terraform.pub > /dev/null
+#store the service principal id in Azure KeyVault
+az keyvault secret set --vault-name <YOUR_KV_NAME> --name spn-id --value <SPN_ID> >/dev/null
+#store the service principal secret in Azure KeyVault
+az keyvault secret set --vault-name <YOUR_KV_NAME> --name spn-secret --value <SPN_SECRET> >/dev/null
+
+
+=======================================================================
+azureadmin
+Password@1234
+====================
+USE [Demo]
+GO
+
+/****** Object:  Table [dbo].[tbl_Name]    Script Date: 11/7/2020 4:09:44 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[tbl_Name](
+	[Id] [nchar](10) NOT NULL,
+	[Name] [nchar](100) NULL,
+ CONSTRAINT [PK_tbl_Name] PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
